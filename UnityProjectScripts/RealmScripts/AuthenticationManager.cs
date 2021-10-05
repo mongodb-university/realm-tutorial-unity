@@ -29,17 +29,22 @@ public class AuthenticationManager : MonoBehaviour
         logoutButton.AddToClassList("show");
     }
 
-    // OnPressLogin() passes the username to the RealmController,
-    // ScoreCardManager, and LeaderboardManager
-    private static void OnPressLogin()
+
+    // OnPressLoginWithBackend() is an asynchronous method that calls
+    // RealmController.SetLoggedInUser to login and passes the currentPlayer to
+    // ScoreCardManager and LeaderboardManager; once logged in the login screen
+    // is hidden and the logout button is shown
+    private static async void OnPressLoginWithBackend()
     {
         try
         {
-            HideAuthenticationUI();
-            loggedInUser = userInput.value;
-            RealmController.SetLoggedInUser(loggedInUser);
-            ScoreCardManager.SetLoggedInUser(loggedInUser);
-            LeaderboardManager.Instance.SetLoggedInUser(loggedInUser);
+            var currentPlayer = await RealmController.SetLoggedInUser(userInput.value, passInput.value);
+            if (currentPlayer != null)
+            {
+                HideAuthenticationUI();
+            }
+            ScoreCardManager.SetLoggedInUser(currentPlayer.Name);
+            LeaderboardManager.Instance.SetLoggedInUser(currentPlayer.Name);
         }
         catch (Exception ex)
         {
@@ -47,8 +52,42 @@ public class AuthenticationManager : MonoBehaviour
         }
     }
 
+    // OnPressRegister() passes RealmController.OnPressRegister() the values of
+    // the userInput and  passInput TextFields in order to register a user
+    private static async void OnPressRegister()
+    {
+        try
+        {
+            var currentPlayer = await RealmController.OnPressRegister(userInput.value, passInput.value);
 
+            if (currentPlayer != null)
+            {
+                HideAuthenticationUI();
+            }
+            ScoreCardManager.SetLoggedInUser(currentPlayer.Name);
+            LeaderboardManager.Instance.SetLoggedInUser(currentPlayer.Name);
 
+        }
+        catch (Exception ex)
+        {
+            Debug.Log("an exception was thrown:" + ex.Message);
+        }
+    }
+
+    // SwitchToLoginUI() switches the UI to the Login UI mode
+    private static void SwitchToLoginUI()
+    {
+        subtitle.text = "Login";
+        startButton.text = "Login & Start Game";
+        toggleLoginOrRegisterUIButton.text = "Don't have an account yet? Register";
+    }
+    // SwitchToRegisterUI() switches the UI to the Register UI mode
+    private static void SwitchToRegisterUI()
+    {
+        subtitle.text = "Register";
+        startButton.text = "Signup & Start Game";
+        toggleLoginOrRegisterUIButton.text = "Have an account already? Login";
+    }
     #endregion
     #region UnityLifecycleMethods
     // Start() is inherited from MonoBehavior and is called on the frame when a
@@ -62,12 +101,37 @@ public class AuthenticationManager : MonoBehaviour
         startButton = root.Q<Button>("start-button");
         logoutButton = root.Q<Button>("logout-button");
         userInput = root.Q<TextField>("username-input");
-        logoutButton.clicked += RealmController.LogOut;
+
+        logoutButton.clicked += RealmController.LogOutBackend;
+        passInput = root.Q<TextField>("password-input");
+        passInput.isPasswordField = true;
+        //  when the start button is clicked, toggle between registration modes
         startButton.clicked += () =>
         {
-            OnPressLogin();
+            if (isInRegistrationMode == true)
+            {
+                OnPressRegister();
+            }
+            else
+            {
+                OnPressLoginWithBackend();
+            }
         };
-
+        toggleLoginOrRegisterUIButton = root.Q<Button>("toggle-login-or-register-ui-button");
+        toggleLoginOrRegisterUIButton.clicked += () =>
+        {
+            // if in registration mode, swap to the login mode
+            if (isInRegistrationMode == true)
+            {
+                SwitchToLoginUI();
+                isInRegistrationMode = false;
+            }
+            else
+            {
+                SwitchToRegisterUI();
+                isInRegistrationMode = true;
+            }
+        };
     }
     #endregion
 }
