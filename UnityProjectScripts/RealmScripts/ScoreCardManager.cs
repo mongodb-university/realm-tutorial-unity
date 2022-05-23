@@ -60,8 +60,12 @@ public class ScoreCardManager : MonoBehaviour
     public static void WatchForChangesToCurrentStats()
     {
         // create a listener that responds to changes to the particular stats for this run/playthrough
+        // :code-block-start: watch-for-changes-stat-propery-changed
+        // :state-start: local sync
         propertyHandler = new PropertyChangedEventHandler((sender, e) => UpdateCurrentStats());
         currentStat.PropertyChanged += propertyHandler;
+        // :state-end:
+        // :code-block-end:
     }
     #endregion
 

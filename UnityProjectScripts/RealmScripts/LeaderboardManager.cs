@@ -19,13 +19,17 @@ public class LeaderboardManager : MonoBehaviour
     private IDisposable listenerToken;  // (Part 2 Sync): listenerToken is the token for registering a change listener on all Stat objects
 
     #region PublicMethods
-    // SetLoggedInUser() is an asynchronous method that opens a realm, calls the CreateLeaderboardUI() method to create the LeaderboardUI and adds it to the Root Component
-    // and calls SetStatListener() to start listening for changes to all Stat objects in order to update the global leaderboard
-    // SetLoggedInUser() takes a userInput, representing a username, as a parameter
-    public async void SetLoggedInUser(string userInput)
-    {
-        username = userInput;
-        realm = await GetRealm();
+    // :code-block-start: sync-leaderboard-setloggedinuser
+    // :state-uncomment-start: sync
+    // // SetLoggedInUser() is an asynchronous method that opens a realm, calls the CreateLeaderboardUI() method to create the LeaderboardUI and adds it to the Root Component
+    // // and calls SetStatListener() to start listening for changes to all Stat objects in order to update the global leaderboard
+    // // SetLoggedInUser() takes a userInput, representing a username, as a parameter
+    // public async void SetLoggedInUser(string userInput)
+    // {
+    //     username = userInput;
+    //     realm = await GetRealm();
+    // :state-uncomment-end:
+    // :code-block-end:
 
 
         // only create the leaderboard on the first run, consecutive
@@ -38,7 +42,11 @@ public class LeaderboardManager : MonoBehaviour
             root.Add(listView);
             isLeaderboardUICreated = true;
         }
-        SetStatListener();
+        // :code-block-start: call-setstatlistener
+        // :state-uncomment-start: sync
+        // SetStatListener();
+        // :state-uncomment-end:
+        // :code-block-end:
     }
     #endregion
 
@@ -105,12 +113,16 @@ public class LeaderboardManager : MonoBehaviour
         listView.AddToClassList("list-view");
     }
 
-    // GetRealm() is an asynchronous method that returns a synced realm
-    private static async Task<Realm> GetRealm()
-    {
-        var syncConfiguration = new SyncConfiguration("UnityTutorialPartition", RealmController.syncUser);
-        return await Realm.GetInstanceAsync(syncConfiguration);
-    }
+    // :code-block-start: sync-open-realm-in-leaderboard
+    // :state-uncomment-start: sync
+    // // GetRealm() is an asynchronous method that returns a synced realm
+    // private static async Task<Realm> GetRealm()
+    // {
+    //     var syncConfiguration = new SyncConfiguration("UnityTutorialPartition", RealmController.syncUser);
+    //     return await Realm.GetInstanceAsync(syncConfiguration);
+    // }
+    // :state-uncomment-end:
+    // :code-block-end:
     // GetRealmPlayerTopStat() queries a realm for the player's Stat object with
     // the highest score
     private int GetRealmPlayerTopStat()
@@ -120,6 +132,8 @@ public class LeaderboardManager : MonoBehaviour
         return realmPlayer.Stats.OrderByDescending(s => s.Score).First().Score;
     }
 
+    // :code-block-start: set-newly-inserted-scores
+    // :state-start: sync
     // SetNewlyInsertedScores() determines if a new Stat is
     // greater than any existing topStats, and if it is, inserts it into the
     // topStats list in descending order
@@ -147,7 +161,11 @@ public class LeaderboardManager : MonoBehaviour
             }
         }
     }
+    // :state-end:
+    // :code-block-end:
 
+    // :code-block-start: listen-for-stat-changes
+    // :state-start: sync
     // SetStatListener sets a listener on all Stat objects, and calls
     // SetNewlyInsertedScores if one has been inserted
     private void SetStatListener()
@@ -172,6 +190,8 @@ public class LeaderboardManager : MonoBehaviour
 
             });
     }
+    // :state-end:
+    // :code-block-end:
 
     #endregion
 
@@ -182,10 +202,14 @@ public class LeaderboardManager : MonoBehaviour
     }
     private void OnDisable()
     {
+        // :code-block-start: leaderboard-cleanup-fn
+        // :state-start: sync
         if (listenerToken != null)
         {
             listenerToken.Dispose();
         }
+        // :state-end:
+        // :code-block-end:
     }
 
     #endregion
