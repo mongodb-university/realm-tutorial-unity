@@ -31,6 +31,14 @@ public class RealmController : MonoBehaviour
     public static void CollectToken()
     {
         // TODO: within a write transaction, increment the number of token's collected in the current playthrough/run's stat
+        // :code-block-start: collect-token-fn
+        // :state-start: sync local
+        realm.Write(() =>
+        {
+            currentStat.TokensCollected += 1;
+        });
+        // :state-end:
+        // :code-block-end:
     }
 
     // DefeatEnemy() performs a write transaction to update the current
@@ -39,6 +47,14 @@ public class RealmController : MonoBehaviour
     {
         // TODO: within a write transaction, increment the number of enemies
         // defeated in the current playthrough/run's stat
+        // :code-block-start: defeat-enemy-fn
+        // :state-start: sync local
+        realm.Write(() =>
+        {
+            currentStat.EnemiesDefeated += 1;
+        });
+        // :state-end:
+        // :code-block-end:
     }
 
     // DeleteCurrentStat() performs a write transaction to delete the current
@@ -49,6 +65,15 @@ public class RealmController : MonoBehaviour
         ScoreCardManager.UnRegisterListener();
         // TODO: within a write transaction, delete the current Stat object, and
         // its reference in the current Player object
+        // :code-block-start: delete-current-stat-method
+        // :state-start: local sync
+        realm.Write(() =>
+        {
+            realm.Remove(currentStat);
+            currentPlayer.Stats.Remove(currentStat);
+        });
+        // :state-end:
+        // :code-block-end:
     }
 
     // LogOut() logs out and reloads the scene
@@ -57,7 +82,45 @@ public class RealmController : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
+    // :code-block-start: logout-backend
+    // :state-start: sync
+    // LogOutBackend() is an asynchronous method that logs out 
+    // the current MongoDB Realm User
+    public static async void LogOutBackend()
+    {
+        await syncUser.LogOutAsync();
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+    // :state-end: 
+    // :code-block-end:
 
+    // :code-block-start: realmcontroller-press-register-sync
+    // :state-start: sync
+    // OnPressRegister() is an asynchronous method that registers a user,
+    // creates a new Player and Stat object OnPressRegister takes a userInput
+    // and passInput, representing a username/password, as a parameter
+    public static async Task<Player> OnPressRegister(string userInput, string passInput)
+    {
+        await realmApp.EmailPasswordAuth.RegisterUserAsync(userInput, passInput);
+        syncUser = await realmApp.LogInAsync(Credentials.EmailPassword(userInput, passInput));
+        realm = await GetRealm(syncUser);
+
+        var player = new Player();
+        player.Id = syncUser.Id;
+        player.Name = userInput;
+        var stat = new Stat();
+        stat.StatOwner = player;
+        realm.Write(() =>
+        {
+            currentPlayer = realm.Add(player);
+            currentStat = realm.Add(stat);
+            currentPlayer.Stats.Add(currentStat);
+        });
+        StartGame();
+        return currentPlayer;
+    }
+    // :state-end:
+    // :code-block-end:
 
     // PlayerWon() calculates and returns the final score for the current
     // playthrough once the player has won the game
@@ -118,9 +181,76 @@ public class RealmController : MonoBehaviour
         // player. If the player exists, give the player a new Stat object,
         // otherwise create a new player and give the new player a new Stat
         // object
+        // :code-block-start: realm-controller-set-logged-in-user
+        // :state-start: local
+        // query the realm to find any Player objects with the matching name
+        var matchedPlayers = realm.All<Player>().Where(p => p.Name == userInput);
+
+        if (matchedPlayers.Count() > 0) // if the player exists
+        {
+            currentPlayer = matchedPlayers.First();
+            var stat = new Stat();
+            stat.StatOwner = currentPlayer;
+
+            realm.Write(() =>
+            {
+                currentStat = realm.Add(stat);
+                currentPlayer.Stats.Add(currentStat);
+            });
+        }
+        else
+        {
+            var player = new Player();
+            player.Id = ObjectId.GenerateNewId().ToString();
+            player.Name = userInput;
+
+            var stat = new Stat();
+            stat.StatOwner = player;
+
+            realm.Write(() =>
+            {
+                currentPlayer = realm.Add(player);
+                currentStat = realm.Add(stat);
+                currentPlayer.Stats.Add(currentStat);
+            });
+        }
+        // :state-end:
+        // :code-block-end:
         StartGame();
     }
 
+    // :code-block-start: realmcontroller-set-logged-in-user-synced
+    // :state-uncomment-start: sync
+    // // SetLoggedInUser() is an asynchronous method that logs in as a Realms.Sync.User, creates a new Stat object for the current playthrough
+    // // and returns the Player object that corresponds to the logged in Realms.Sync.User
+    // // SetLoggedInUser() takes a userInput and passInput, representing a username/password, as a parameter
+    // public static async Task<Player> SetLoggedInUser(string userInput, string passInput)
+    // {
+    //     syncUser = await realmApp.LogInAsync(Credentials.EmailPassword(userInput, passInput));
+    //     if (syncUser != null)
+    //     {
+    //         realm = await GetRealm(syncUser);
+    //         currentPlayer = realm.Find<Player>(syncUser.Id);
+    //         if (currentPlayer != null)
+    //         {
+    //             var stat = new Stat();
+    //             stat.StatOwner = currentPlayer;
+    //             realm.Write(() =>
+    //             {
+    //                 currentStat = realm.Add(stat);
+    //                 currentPlayer.Stats.Add(currentStat);
+    //             });
+    //             StartGame();
+    //         }
+    //         else
+    //         {
+    //             Debug.Log("This player exists a MongoDB Realm User but not as a Realm Object, please delete the MongoDB Realm User and create one using the Game rather than MongoDB Atlas or Realm Studio");
+    //         }
+    //     }
+    //     return currentPlayer;
+    // }
+    // :state-uncomment-end:
+    // :code-block-end:
 
     #endregion
 
@@ -166,8 +296,24 @@ public class RealmController : MonoBehaviour
     {
         // TODO: open a realm and return it
         return null;
+        // :code-block-start: get-realm-fn
+        // :state-start: local
+        return Realm.GetInstance();
+        // :state-end:
+        // :code-block-end:
     }
 
+    // :code-block-start: get-realm-synced-realm-controller
+    // :state-uncomment-start: sync
+    // // GetRealm() is an asynchronous method that returns a synced realm
+    // // GetRealm() takes a logged in Realms.Sync.User as a parameter
+    // private static async Task<Realm> GetRealm(User loggedInUser)
+    // {
+    //     var syncConfiguration = new SyncConfiguration("UnityTutorialPartition", loggedInUser);
+    //     return await Realm.GetInstanceAsync(syncConfiguration);
+    // }
+    // :state-uncomment-end:
+    // :code-block-end:
     // StartGame() records how long the player has been playing during the
     // current playthrough (i.e since logging in or since last losing or
     // winning)
