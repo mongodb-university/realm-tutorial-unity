@@ -24,17 +24,6 @@ public class LeaderboardManager : MonoBehaviour
     // SetLoggedInUser()  takes a userInput, representing a username, as a
     // parameter
     public void SetLoggedInUser(string userInput)
-    // :code-block-start: sync-leaderboard-setloggedinuser
-    // :state-uncomment-start: sync
-    // // SetLoggedInUser() is an asynchronous method that opens a realm, calls the CreateLeaderboardUI() method to create the LeaderboardUI and adds it to the Root Component
-    // // and calls SetStatListener() to start listening for changes to all Stat objects in order to update the global leaderboard
-    // // SetLoggedInUser() takes a userInput, representing a username, as a parameter
-    // public async void SetLoggedInUser(string userInput)
-    // {
-    //     username = userInput;
-    //     realm = await GetRealm();
-    // :state-uncomment-end:
-    // :code-block-end:
 
     {
         username = userInput;
@@ -51,11 +40,6 @@ public class LeaderboardManager : MonoBehaviour
             root.Add(listView);
             isLeaderboardUICreated = true;
         }
-        // :code-block-start: call-setstatlistener
-        // :state-uncomment-start: sync
-        // SetStatListener();
-        // :state-uncomment-end:
-        // :code-block-end:
     }
     #endregion
 
@@ -122,16 +106,6 @@ public class LeaderboardManager : MonoBehaviour
         listView.AddToClassList("list-view");
     }
 
-    // :code-block-start: sync-open-realm-in-leaderboard
-    // :state-uncomment-start: sync
-    // // GetRealm() is an asynchronous method that returns a synced realm
-    // private static async Task<Realm> GetRealm()
-    // {
-    //     var syncConfiguration = new SyncConfiguration("UnityTutorialPartition", RealmController.syncUser);
-    //     return await Realm.GetInstanceAsync(syncConfiguration);
-    // }
-    // :state-uncomment-end:
-    // :code-block-end:
     // GetRealmPlayerTopStat() queries a realm for the player's Stat object with
     // the highest score
     private int GetRealmPlayerTopStat()
@@ -141,66 +115,7 @@ public class LeaderboardManager : MonoBehaviour
         return realmPlayer.Stats.OrderByDescending(s => s.Score).First().Score;
     }
 
-    // :code-block-start: set-newly-inserted-scores
-    // :state-start: sync
-    // SetNewlyInsertedScores() determines if a new Stat is
-    // greater than any existing topStats, and if it is, inserts it into the
-    // topStats list in descending order
-    // SetNewlyInsertedScores() takes an array of insertedIndices
-    private void SetNewlyInsertedScores(int[] insertedIndices)
-    {
-        foreach (var i in insertedIndices)
-        {
-            var newStat = realm.All<Stat>().ElementAt(i);
 
-            for (var scoreIndex = 0; scoreIndex < topStats.Count; scoreIndex++)
-            {
-                if (topStats.ElementAt(scoreIndex).IsValid == true && topStats.ElementAt(scoreIndex).Score < newStat.Score)
-                {
-                    if (topStats.Count > 4)
-                    {   // An item shouldn't be removed if the leaderboard has less than 5 items
-                        topStats.RemoveAt(topStats.Count - 1);
-                    }
-                    topStats.Insert(scoreIndex, newStat);
-                    root.Remove(listView); // remove the old listView
-                    CreateTopStatListView(); // create a new listView
-                    root.Add(listView); // add the new listView to the UI
-                    break;
-                }
-            }
-        }
-    }
-    // :state-end:
-    // :code-block-end:
-
-    // :code-block-start: listen-for-stat-changes
-    // :state-start: sync
-    // SetStatListener sets a listener on all Stat objects, and calls
-    // SetNewlyInsertedScores if one has been inserted
-    private void SetStatListener()
-    {
-
-        // Observe collection notifications. Retain the token to keep observing.
-        listenerToken = realm.All<Stat>()
-            .SubscribeForNotifications((sender, changes, error) =>
-            {
-
-                if (error != null)
-                {
-                    // Show error message
-                    Debug.Log("an error occurred while listening for score changes :" + error);
-                    return;
-                }
-
-                if (changes != null)
-                {
-                    SetNewlyInsertedScores(changes.InsertedIndices);
-                }
-
-            });
-    }
-    // :state-end:
-    // :code-block-end:
 
     #endregion
 
@@ -211,14 +126,6 @@ public class LeaderboardManager : MonoBehaviour
     }
     private void OnDisable()
     {
-        // :code-block-start: leaderboard-cleanup-fn
-        // :state-start: sync
-        if (listenerToken != null)
-        {
-            listenerToken.Dispose();
-        }
-        // :state-end:
-        // :code-block-end:
     }
 
     #endregion
