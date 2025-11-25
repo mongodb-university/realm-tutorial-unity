@@ -1,8 +1,12 @@
-# Realm Unity Tutorial
+> [!Warning]
+> Atlas App Services has reached its end-of-life status and is no longer actively supported by MongoDB.
 
-Follow along at https://www.mongodb.com/docs/realm/tutorial/unity/
+<del>
+## Realm Unity Tutorial
 
-## Troubleshooting
+~~Follow along at https://www.mongodb.com/docs/realm/tutorial/unity/~~
+
+### Troubleshooting
 
 The most common issue is schema mismatch due to frequent little tweaks to the
 schema as you develop your app.
@@ -13,12 +17,4 @@ schema as you develop your app.
 - Be sure to **deploy your changes** in the Realm UI.
 - If your schema does not match the server, **compare the class definitions from the SDKs tab in the Realm UI** with those in the client code.
 - When creating objects, make sure the **partition value of your new object matches** the partition value you opened the Realm with.
-
-## Issues & Pull Requests
-
-If you find an issue or have a suggestion, please let us know using the feedback
-widget on the [docs site](http://www.mongodb.com/docs/realm/tutorial).
-
-This repo is automatically derived from our main docs repo. If you'd like to
-submit a pull request -- thanks! -- please feel free to do so at
-https://github.com/mongodb/docs-realm/ (see the tutorial/ subdirectory).
+</del>
